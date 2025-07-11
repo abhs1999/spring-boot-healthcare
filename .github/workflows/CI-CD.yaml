@@ -44,7 +44,8 @@ jobs:
         run: docker push $IMAGE_NAME:$IMAGE_TAG
 
       - name: Show pushed image tag
-        run: echo "Docker image pushed: $IMAGE_NAME:$IMAGE_TAG"
+        run: |
+          echo "Docker image pushed: $IMAGE_NAME:$IMAGE_TAG"
 
       - name: Run Docker container as staging deployment
         run: |
