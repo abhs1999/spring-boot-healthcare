@@ -47,16 +47,36 @@ jobs:
         run: |
           echo "Docker image pushed: $IMAGE_NAME:$IMAGE_TAG"
 
-      - name: Run Docker container as staging deployment
-        run: |
-          docker run -d -p 8080:8080 --name healthcare-stage $IMAGE_NAME:$IMAGE_TAG
-          sleep 10
-          echo "Container logs:"
-          docker logs healthcare-stage
+  deploy-to-kind:
+    needs: build-test-docker
+    runs-on: ubuntu-latest
 
-      - name: Test health endpoint on staging container
-        run: |
-          curl --retry 10 --retry-connrefused --retry-delay 3 http://localhost:8080/health
+    env:
+      IMAGE_TAG: build-${{ github.run_number }}
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/spring-boot-healthcare
 
-      - name: List running containers
-        run: docker ps
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Kind cluster
+        uses: helm/kind-action@v1.8.0
+
+      - name: Pull and load Docker image
+        run: |
+          docker pull $IMAGE_NAME:$IMAGE_TAG
+          kind load docker-image $IMAGE_NAME:$IMAGE_TAG
+
+      - name: Replace image tag in deployment
+        run: |
+          sed "s|IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.final.yaml
+
+      - name: Deploy to Kubernetes using Kind
+        run: |
+          kubectl apply -f k8s/deployment.final.yaml
+          kubectl apply -f k8s/service.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/healthcare-deployment --timeout=60s
+          kubectl get all
