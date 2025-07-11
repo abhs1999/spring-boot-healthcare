@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: healthcare-app
-          image: abhs99/spring-boot-healthcare:latest
+          image: abhs99/spring-boot-healthcare:IMAGE_PLACEHOLDER
           ports:
             - containerPort: 8080
           readinessProbe:
