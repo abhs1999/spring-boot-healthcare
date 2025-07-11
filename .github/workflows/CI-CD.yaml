@@ -48,35 +48,42 @@ jobs:
           echo "Docker image pushed: $IMAGE_NAME:$IMAGE_TAG"
 
   deploy-to-kind:
-    needs: build-test-docker
-    runs-on: ubuntu-latest
+   needs: build-test-docker
+   runs-on: ubuntu-latest
 
-    env:
-      IMAGE_TAG: build-${{ github.run_number }}
-      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/spring-boot-healthcare
+   env:
+     IMAGE_TAG: build-${{ github.run_number }}
+     IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/spring-boot-healthcare
 
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+   steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
 
-      - name: Set up Kind cluster
-        uses: helm/kind-action@v1.8.0
+    - name: Set up Kind cluster
+      uses: helm/kind-action@v1.8.0
+      with:
+        cluster_name: kind
+        wait: 60s
+        version: v0.20.0  # optional but recommended for stability
 
-      - name: Pull and load Docker image
-        run: |
-          docker pull $IMAGE_NAME:$IMAGE_TAG
-          kind load docker-image $IMAGE_NAME:$IMAGE_TAG
+    - name: Verify Kind nodes
+      run: kubectl get nodes
 
-      - name: Replace image tag in deployment
-        run: |
-          sed "s|IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.final.yaml
+    - name: Pull and load Docker image into Kind
+      run: |
+        docker pull $IMAGE_NAME:$IMAGE_TAG
+        kind load docker-image $IMAGE_NAME:$IMAGE_TAG
 
-      - name: Deploy to Kubernetes using Kind
-        run: |
-          kubectl apply -f k8s/deployment.final.yaml
-          kubectl apply -f k8s/service.yaml
+    - name: Replace image tag in deployment manifest
+      run: |
+        sed "s|IMAGE_PLACEHOLDER|$IMAGE_TAG|g" k8s/deployment.yaml > k8s/deployment.final.yaml
 
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/healthcare-deployment --timeout=60s
-          kubectl get all
+    - name: Deploy to Kind
+      run: |
+        kubectl apply -f k8s/deployment.final.yaml
+        kubectl apply -f k8s/service.yaml
+
+    - name: Wait for deployment to finish
+      run: |
+        kubectl rollout status deployment/healthcare-deployment --timeout=60s
+        kubectl get all
