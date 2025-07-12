@@ -70,7 +70,7 @@ jobs:
       with:
         cluster_name: kind
         wait: 60s
-        version: v0.20.0  # optional but recommended for stability
+        version: v0.20.0  
 
     - name: Verify Kind nodes
       run: kubectl get nodes
