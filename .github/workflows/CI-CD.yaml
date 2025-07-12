@@ -22,8 +22,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build with Maven and run tests
-        run: mvn clean package -DskipTests=false
+      - name: Compile the code
+        run: mvn compile
+
+      - name: Run unit tests
+        run: mvn test
+
+      - name: Package the application
+        run: mvn clean package
 
       - name: Upload JAR to GitHub artifacts
         uses: actions/upload-artifact@v4
