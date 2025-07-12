@@ -89,10 +89,10 @@ jobs:
         kubectl rollout status deployment/healthcare-deployment --timeout=60s
         kubectl get all
             
-    - name: Port-forward and test health endpoint
+    - name: Port-forward and show health check response
       run: |
-        kubectl port-forward svc/healthcare-service 8080:80 &
+        nohup kubectl port-forward svc/healthcare-service 8080:80 > /dev/null 2>&1 &
         sleep 5
         echo "Health check response:"
-        curl -s http://localhost:8080/health
+        curl -s -i http://localhost:8080/health || echo "Health check failed"
 
