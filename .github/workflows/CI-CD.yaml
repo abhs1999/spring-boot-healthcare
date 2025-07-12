@@ -91,6 +91,7 @@ jobs:
             
     - name: Port-forward and test health endpoint
       run: |
-          kubectl port-forward svc/healthcare-service 8080:80 &
-          sleep 5
-          curl --retry 10 --retry-connrefused --retry-delay 3 http://localhost:8080/health
+        kubectl port-forward svc/healthcare-service 8080:80 &
+        sleep 5
+        echo "Health check response:"
+        curl --retry 10 --retry-connrefused --retry-delay 3 http://localhost:8080/health
